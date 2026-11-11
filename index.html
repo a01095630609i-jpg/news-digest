@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>뉴스 다이제스트</title>
+<!-- Pretendard: 없으면 시스템 서체로 대체돼요 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  /* ── 디자인 토큰 (붙여 주신 design.md 값) ───────────────── */
+  :root {
+    --blue-500: oklch(0.620 0.191 258);
+    --blue-50:  oklch(0.959 0.020 250);
+    --grey-900: oklch(0.237 0.020 258);
+    --grey-700: oklch(0.460 0.028 256);
+    --grey-600: oklch(0.562 0.025 254);
+    --grey-500: oklch(0.666 0.021 253);
+    --grey-400: oklch(0.779 0.016 251);
+    --grey-200: oklch(0.930 0.005 248);
+    --grey-100: oklch(0.966 0.003 248);
+    --white:    oklch(1 0 0);
+    --press-overlay: oklch(0 0 0 / 0.26);
+
+    --background: var(--white);
+    --grey-background: var(--grey-100);
+    --layered: var(--white);
+    --hairline: var(--grey-200);
+
+    --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+            "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+    --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+
+    --radius-m: 12px; --radius-l: 14px; --radius-xl: 16px; --radius-3xl: 24px; --radius-full: 999px;
+
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --dur-fast: 120ms; --dur-base: 200ms;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --blue-500: oklch(0.630 0.192 258);
+      --blue-50:  oklch(0.300 0.062 267);
+      --grey-900: oklch(1 0 0);
+      --grey-700: oklch(0.818 0.004 286);
+      --grey-600: oklch(0.701 0.009 286);
+      --grey-500: oklch(0.596 0.014 286);
+      --grey-400: oklch(0.500 0.017 286);
+      --grey-200: oklch(0.361 0.019 285);
+      --grey-100: oklch(0.297 0.016 285);
+      --background: oklch(0.207 0.010 286);
+      --grey-background: oklch(0.174 0.006 286);
+      --layered: oklch(0.247 0.013 285);
+      --hairline: oklch(0.361 0.019 285);
+    }
+  }
+
+  /* ── 기본 ───────────────────────────────────────────── */
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--grey-background); color: var(--grey-900);
+    font-family: var(--font); font-size: 15px; line-height: 1.5; letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 640px; margin: 0 auto; padding-bottom: var(--space-10); }
+
+  /* top-app-bar: 56pt, 왼쪽 정렬 제목 */
+  .top {
+    position: sticky; top: 0; z-index: 2;
+    height: 56px; display: flex; align-items: center; padding: 0 var(--space-6);
+    background: var(--grey-background);
+  }
+  .top h1 { margin: 0; font-size: 20px; font-weight: 700; line-height: 1.35; letter-spacing: -0.015em; }
+
+  /* 날짜 chip 줄 */
+  .chips {
+    display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none;
+    padding: var(--space-2) var(--space-6) var(--space-4);
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; height: 34px; padding: 0 var(--space-4);
+    display: inline-flex; align-items: center;
+    border: 1px solid var(--hairline); border-radius: var(--radius-full);
+    background: var(--layered); color: var(--grey-700);
+    font: 600 13px/1.25 var(--font); font-variant-numeric: tabular-nums;
+    text-decoration: none; position: relative; overflow: hidden;
+    transition: background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
+  }
+  .chip[aria-current="true"] { background: var(--grey-900); border-color: var(--grey-900); color: var(--background); }
+
+  /* 섹션 카드 */
+  .section {
+    margin: 0 var(--space-4) var(--space-3); padding: var(--space-6);
+    background: var(--layered); border-radius: var(--radius-3xl);
+  }
+  .eyebrow { margin: 0 0 var(--space-1); color: var(--grey-600); font: 500 13px/1.5 var(--font); font-variant-numeric: tabular-nums; }
+  .section h2 { margin: 0 0 var(--space-4); font-size: 22px; font-weight: 700; line-height: 1.3; letter-spacing: -0.015em; }
+
+  /* 세 줄 요약 */
+  .summary { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+  .summary li { display: flex; gap: var(--space-3); color: var(--grey-700); font-size: 15px; }
+  .summary .num {
+    flex: none; width: 22px; height: 22px; margin-top: 1px; border-radius: var(--radius-full);
+    background: var(--blue-50); color: var(--blue-500);
+    font: 600 12px/22px var(--font); text-align: center; font-variant-numeric: tabular-nums;
+  }
+
+  /* 기사 list-header + list-row */
+  .list-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 0 0 var(--space-2);
+  }
+  .list-header h2 { margin: 0; font-size: 20px; letter-spacing: -0.015em; }
+  .count { color: var(--grey-600); font: 500 13px/1.5 var(--font); font-variant-numeric: tabular-nums; }
+  .article { padding: var(--space-5) 0; border-top: 1px solid var(--hairline); }
+  .article:first-of-type { border-top: 0; padding-top: var(--space-3); }
+  .article h3 { margin: 0 0 var(--space-2); font-size: 17px; font-weight: 600; line-height: 1.45; letter-spacing: -0.01em; }
+  .article p  { margin: 0 0 var(--space-3); color: var(--grey-700); }
+  .text-button {
+    display: inline-flex; align-items: center; gap: 2px; min-height: 44px; margin: -12px 0 -12px -8px; padding: 0 8px;
+    border-radius: var(--radius-m); color: var(--blue-500);
+    font: 600 15px/1.25 var(--font); text-decoration: none; position: relative; overflow: hidden;
+  }
+  .text-button svg { width: 16px; height: 16px; }
+
+  /* pressed: 검정 26% overlay */
+  .chip::after, .text-button::after {
+    content: ""; position: absolute; inset: 0; background: var(--press-overlay);
+    opacity: 0; transition: opacity var(--dur-fast) var(--ease); pointer-events: none;
+  }
+  .chip:active::after, .text-button:active::after { opacity: 0.4; }
+  .chip:focus-visible, .text-button:focus-visible { outline: 1.5px solid var(--blue-500); outline-offset: 2px; }
+
+  /* 빈 상태·로딩 */
+  .empty { text-align: center; padding: var(--space-10) var(--space-6); }
+  .empty .title { margin: 0 0 var(--space-2); font-size: 18px; font-weight: 600; }
+  .empty p { margin: 0; color: var(--grey-600); }
+  .empty code { font-size: 13px; background: var(--grey-100); padding: 2px 6px; border-radius: 4px; }
+  .dots { display: flex; justify-content: center; gap: 6px; padding: var(--space-10); }
+  .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--grey-400); animation: pulse 960ms var(--ease) infinite; }
+  .dots i:nth-child(2) { animation-delay: 160ms; } .dots i:nth-child(3) { animation-delay: 320ms; }
+  @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top"><h1>뉴스 다이제스트</h1></header>
+  <nav class="chips" id="chips" aria-label="날짜"></nav>
+  <main id="view"><div class="dots" aria-label="불러오는 중"><i></i><i></i><i></i></div></main>
+</div>
+
+<script>
+const chips = document.getElementById("chips");
+const view = document.getElementById("view");
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const chevron = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>`;
+
+const prettyDate = name => {
+  const m = name.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${+m[2]}월 ${+m[3]}일` : name.replace(/\.md$/, "");
+};
+
+// digest 파일 구조를 읽어요: 세 줄 요약(번호 목록) + 기사(## 제목 / 문단 / 원문: 링크)
+function parse(md) {
+  const lines = md.split(/\r?\n/);
+  const out = { summary: [], articles: [], plain: [] };
+  let cur = null, inSummary = false;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line || /^#\s/.test(line)) continue;
+    const h2 = line.match(/^##\s+(.*)$/);
+    if (h2) {
+      inSummary = /세 줄 요약/.test(h2[1]);
+      cur = inSummary ? null : { title: h2[1].replace(/^\d+\.\s*/, ""), body: [], link: "" };
+      if (cur) out.articles.push(cur);
+      continue;
+    }
+    const li = line.match(/^\d+\.\s+(.*)$/);
+    if (inSummary && li) { out.summary.push(li[1]); continue; }
+    const link = line.match(/^원문:\s*(https?:\/\/\S+)/);
+    if (cur && link) { cur.link = link[1]; continue; }
+    if (cur) cur.body.push(line); else out.plain.push(line);
+  }
+  return out;
+}
+
+function render(name, md) {
+  const d = parse(md);
+  if (!d.articles.length && !d.summary.length) {
+    return `<section class="section empty"><p class="title">관심 주제와 맞는 글이 없었어요</p>
+      <p>${esc(d.plain.join(" ") || "다음 요약을 기다려 주세요.")}</p></section>`;
+  }
+  const summary = d.summary.length ? `
+    <section class="section">
+      <p class="eyebrow">${esc(prettyDate(name))}</p>
+      <h2>오늘의 세 줄 요약</h2>
+      <ol class="summary">${d.summary.map((s, i) => `<li><span class="num">${i + 1}</span><span>${esc(s)}</span></li>`).join("")}</ol>
+    </section>` : "";
+  const articles = `
+    <section class="section">
+      <div class="list-header"><h2>고른 기사</h2><span class="count">${d.articles.length}건</span></div>
+      ${d.articles.map(a => `
+        <article class="article">
+          <h3>${esc(a.title)}</h3>
+          <p>${esc(a.body.join(" "))}</p>
+          ${a.link ? `<a class="text-button" href="${esc(a.link)}" target="_blank" rel="noopener">원문 보기${chevron}</a>` : ""}
+        </article>`).join("")}
+    </section>`;
+  return summary + articles;
+}
+
+function emptyState(title, body) {
+  view.innerHTML = `<section class="section empty"><p class="title">${title}</p><p>${body}</p></section>`;
+}
+
+async function show(name) {
+  for (const c of chips.querySelectorAll("a")) c.setAttribute("aria-current", c.dataset.name === name);
+  const res = await fetch(`digest/${encodeURIComponent(name)}`);
+  if (!res.ok) return emptyState("파일을 열지 못했어요", "목록을 새로고침한 뒤 다시 골라 주세요.");
+  view.innerHTML = render(name, await res.text());
+  document.title = `${prettyDate(name)} 뉴스 다이제스트`;
+}
+
+async function init() {
+  let files;
+  try {
+    files = (await (await fetch("digest/index.json")).json()).files;
+  } catch {
+    return emptyState("파일 목록을 읽지 못했어요", "<code>python serve.py</code>로 서버를 켠 뒤 다시 열어 주세요.");
+  }
+  if (!files.length) return emptyState("아직 요약이 없어요", "<code>python rss_digest.py</code>를 실행하면 여기에 보여요.");
+  chips.innerHTML = files.map(f =>
+    `<a class="chip" href="#${esc(f)}" data-name="${esc(f)}">${esc(prettyDate(f))}</a>`).join("");
+  const pick = () => {
+    const h = decodeURIComponent(location.hash.slice(1));
+    show(files.includes(h) ? h : files[0]);
+  };
+  window.addEventListener("hashchange", pick);
+  pick();
+}
+init();
+</script>
+</body>
+</html>
